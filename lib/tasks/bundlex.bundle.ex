@@ -85,6 +85,8 @@ defmodule Mix.Tasks.Bundlex.Bundle do
                 apply_patches(platform_module, patches_config, :erlang, :post_compile)
 
                 Mix.Tasks.Escript.run(~w|build|)
+
+                prepare_package()
               _ ->
                 Mix.raise "Invalid configuration. Unable to find :bundlex, #{inspect(platform)} key in the configuration file."
             end
@@ -103,6 +105,20 @@ defmodule Mix.Tasks.Bundlex.Bundle do
       0 -> 0
       code -> Mix.raise("#{cmd} finished with error #{code}")
     end
+  end
+
+  defp prepare_package() do
+    Mix.shell.info "== FINAL PACKAGE"
+    :file.make_dir("_target/package")
+
+    Mix.shell.info "-- Copying erlang release"
+    case :file.list_dir("_target/otp/release") do
+      {:ok, [release_platform]} ->
+        :file.rename("_target/otp/release/#{release_platform}", "_target/package/erlang")
+    end
+
+    Mix.shell.info "-- Creating ZIP archive"
+    Mix.shell.cmd "cd _target && zip -r release.zip package"
   end
 
   defp set_up_toolchain(platform_module, platform_config) do
